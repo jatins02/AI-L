@@ -1,0 +1,10 @@
+__repr__ is a special dundar method inside a python class, that is used to define an
+unambiguous, developer-focused string representation of that object
+
+__str__ is a clean user friendly summary for the end user
+
+__add__ is called when + is used, so a+b will be internally called as a.__add__(b)
+
+zip in python takes two iterators and creates a new iterator, that iterates over the entries of the 
+corresponding tuples
+
