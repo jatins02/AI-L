@@ -2,6 +2,36 @@
 import math
 import random
 
+# import os
+# import logging
+
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+import tensorflow as tf
+
+# tf.get_logger().setLevel(logging.ERROR)
+# tf.autograph.set_verbosity(0)
+
+from keras.datasets import mnist
+
+
+# 1. import and automatically load the dataset
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+# print(f"original training shape: {X_train.shape}")
+# print(f"test dataset shape: {X_test.shape}")
+
+
+# 2. vectorise (flatten) the 28 * 28 images into 784 size 1d arrays
+# -1 tells numpy to automatically calculate the number of dimensions for the number of samples
+X_train_vectorised = X_train.reshape(X_train.shape[0], -1)
+X_test_vectorised = X_test.reshape(X_test.shape[0], -1)
+
+# 3. normalise the pixel values (optional but highly recommended)
+X_train_vectorised = X_train_vectorised.astype("float32") / 255.0
+X_test_vectorised = X_test_vectorised.astype("float32") / 255.0 
+
+# print(X_train_vectorised.shape)             # 60000 rows and 784 columns
+# print(y_train.shape)
 
 # class takes in the number of inputs while intialising it, then while calling it you pass in the input as list
 # it calculates and returns the activation
@@ -216,43 +246,65 @@ this can be implemented using topological sort: here all the edges go only one w
 # ---------------------------------------------------------
 # using above model
 
-xs = [[2.0, 3.0, -1.0],             # list containing different inputs that will be fed into the nn
-      [3.0, -1.0, 0.5],
-      [0.5, 1.0, 1.0], 
-      [1.0, 1.0, -1.0]]
+# xs = [[2.0, 3.0, -1.0],             # list containing different inputs that will be fed into the nn
+#       [3.0, -1.0, 0.5],
+#       [0.5, 1.0, 1.0], 
+#       [1.0, 1.0, -1.0]]
 
-ys = [1.0, -1.0, -1.0, 1.0]         # desired outputs
+# ys = [1.0, -1.0, -1.0, 1.0]         # desired outputs
 
-n = MLP(3, [4, 4, 1])               # n is the MLP that takes inputs, 3 in size, has two layers with 4 neurons and the last layer with 1 neuron
+# n = MLP(3, [4, 4, 1])               # n is the MLP that takes inputs, 3 in size, has two layers with 4 neurons and the last layer with 1 neuron
 
-ypreds = [n(x) for x in xs]
+# ypreds = [n(x) for x in xs]
 
-losses1 = [(ygt - yp) ** 2  for ygt, yp in zip(ypreds, ys)]
+# losses1 = [(ygt - yp) ** 2  for ygt, yp in zip(ypreds, ys)]
 
-loss1 = sum(losses1)
-print(loss1)
-loss1.backward()
+# loss1 = sum(losses1)
+# print(loss1)
+# loss1.backward()
 
-# print(n.layers[0].neurons[0].w[0].grad)
+# # print(n.layers[0].neurons[0].w[0].grad)
 
-for p in n.parameters():
-    p.data += -0.01 * p.grad                # 0.01 is the step size
+# for p in n.parameters():
+#     p.data += -0.01 * p.grad                # 0.01 is the step size
 
 
 
-ypreds2 = [n(x) for x in xs]
-losses2 = [(ygt - ypred)**2 for ygt, ypred in  zip(ys, ypreds2)]
-loss2 = sum(losses2)
-print(loss2)
+# ypreds2 = [n(x) for x in xs]
+# losses2 = [(ygt - ypred)**2 for ygt, ypred in  zip(ys, ypreds2)]
+# loss2 = sum(losses2)
+# print(loss2)
 
 
 
 #training loop
-epochs = 1222
+# epochs = 1222
+# for epoch in range(epochs):
+#     #forward pass
+#     ypreds = [n(x) for x in xs]
+#     losses = [(ygt - ypred)**2 for ygt, ypred in zip(ys, ypreds)]
+#     loss = sum(losses)
+
+#     #backward pass
+#     for p in n.parameters():
+#         p.grad = 0.0
+#     loss.backward()
+
+#     #update
+#     for p in n.parameters():
+#         p.data += -0.01 * p.grad
+
+#     print(f"{epoch}, {loss.data}")
+
+
+n = MLP(784, [4, 4, 1])
+
+#training loop
+epochs = 100
 for epoch in range(epochs):
     #forward pass
-    ypreds = [n(x) for x in xs]
-    losses = [(ygt - ypred)**2 for ygt, ypred in zip(ys, ypreds)]
+    ypreds = [n(x) for x in X_train_vectorised]
+    losses = [(ygt - ypred) ** 2 for ygt, ypred in zip(y_train, ypreds)]
     loss = sum(losses)
 
     #backward pass
@@ -260,8 +312,8 @@ for epoch in range(epochs):
         p.grad = 0.0
     loss.backward()
 
-    #update
+    # update
     for p in n.parameters():
         p.data += -0.01 * p.grad
 
-    print(f"{epoch}, {loss.data}")
+    print(f"epochs: {epoch}, {loss.data}")
