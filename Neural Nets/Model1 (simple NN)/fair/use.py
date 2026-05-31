@@ -83,20 +83,19 @@ for epoch in range(epochs):
 
 # testing loop
 
-#testing on 100 images
 x_test_subset = x_test[:100]
 ind = 0
 correct = 0
-for img in x_test_subset:
+
+# testing loop (more concise)
+for ind, img in enumerate(x_test_subset):
     output = n(img)
     pred = output.index(max(output))
+
     if pred == y_test[ind]:
-        correct += 1
-    ind+=1
+        correct+=1
 
 result = f"percentage correct: {correct/100.0}%"
-
-
 
 
 
