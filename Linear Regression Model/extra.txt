@@ -1,4 +1,4 @@
-simple linear regression model, to classify the quality of wine.
+LINEAR REGRESSION MODEL, TO PREDICT THE QUALITY OF WINE.
 
 using the Wine Quality Dataset from Kaggle.
 This classification problem is not easy, because the dataset has fewer samples and is highly imbalanced (much more normal wines than excellent or poor ones).
@@ -21,6 +21,73 @@ Output variable (based on sensory data):
 12 - quality (score between 0 and 10)
 
 
-using sklearn standard scalar for normalisation and why is normalisation important in the first place?
+Q. USING sklearn scalar FOR NORMALISATION AND WHY IS NORMALISATION IMPORTANT IN THE FIRST PLACE?
+Data normalization is critical because it scales features to a uniform range, preventing variables with 
+large values from dominating the training process. This ensures stable gradient descents, prevents optimization 
+algorithms from oscillating, and significantly accelerates model convergence.
+Consider the example of this dataset;
+columns like fixed acidity and free SO2 store very large values in them, because of their large values, they will
+hold more weightage in the result of the next layer, because a = x.w + b, x being the input vector.
+now in this input vector the columns corresponding to fixed acidity and free SO2 will hold more weightage in the
+activation of the next layer.
+To minimise this, so that all the factors hold ~equal weightage, we normalise each column.
 
-why did we have to convert quality column to zero-index labels
+We use sklearn to normalise generally, because it is more flexible and easier to implement, while also being more
+robustly implemented and easier to code.
+
+
+
+Q. WHY DID WE CONVERT THE QUALITY COLUMN TO HAVE ZERO INDEXED LABELS?
+This is the sneakiest trap in this dataset. The wine quality scores in the CSV are integers ranging from 3 to 8.
+If you treat this as a Multi-Class Classification problem using PyTorch's default nn.CrossEntropyLoss(), 
+PyTorch expects your target class labels to be strictly 0-indexed integers starting from 0 up to N-1.
+If your model outputs 6 classes (corresponding to scores 3, 4, 5, 6, 7, 8), PyTorch will look for indices 0, 1, 2, 3, 4, 5.
+If it encounters a raw label value of 8, your code will instantly crash with a RuntimeError: Target 8 is out of bounds.
+
+
+
+# torch.argmax(tensor), returns the index of the largest value in the tensor.
+Default Behavior (Flattened Tensor)If you call torch.argmax(input) without specifying a dimension, PyTorch treats the tensor as 
+if it were flattened into a 1D array. It will return a single integer index representing the position of the maximum value.
+eg. code:
+x = torch.tensor([[1, 3], 
+                  [5, 2]])
+print(torch.argmax(x))  # Returns tensor(2) because 5 is at index 2 if flattened [1, 3, 5, 2]
+
+Specifying a Dimension (dim)If you provide the dim parameter, the function computes the maximum index along that specific axis.
+dim = 0: Looks down the rows (column-wise).
+dim = 1: Looks across the columns (row-wise).
+# Column-wise max indices
+print(torch.argmax(x, dim=0))  # Returns tensor([1, 0])
+
+# Row-wise max indices
+print(torch.argmax(x, dim=1))  # Returns tensor([1, 0])
+
+Important Behavior Notes
+Multiple Maximums: If the highest value appears more than once, torch.argmax will only return the index of its first occurrence.
+Data Type: The returned index is wrapped in a tensor of type torch.int64 (a LongTensor).
+No Gradients: The argmax operation is discontinuous and not differentiable. You cannot backpropagate through it during neural network training.
+Alternative: If you need both the maximum value and its index at the same time, use torch.max instead.
+
+
+TO ACCESS A ROW OF A SERIES, 
+use series.iloc[ind]
+because series[ind], throws a KeyError.
+
+
+
+SPLITTING THE DATASET, IN A STRATIFIED MANNER:
+We split the dataset with stratification, use the stratify="column-name" keyword argument while splitting the dataset.
+Stratified splitting ensures that the training and testing subsets maintain the exact same class proportions as the 
+original dataset, which is crucial for handling imbalanced data.
+
+
+
+
+
+
+
+
+
+
+

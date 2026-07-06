@@ -1,5 +1,4 @@
-import torch
+import pandas as pd
 
-x = torch.zeros(6)
-x[4] = 1
-print(x)
+df = pd.read_csv("wine-quality-dataset/WineQT.csv")
+print(df.head)

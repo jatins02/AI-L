@@ -10,35 +10,36 @@ from sklearn.model_selection import train_test_split
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 df = pd.read_csv("wine-quality-dataset/WineQT.csv")
-
 df = df.drop(["Id"], axis=1)
 df.drop_duplicates(inplace=True)
 df.dropna(inplace=True)
-# df shape (1018, 12)
+# df shape: (1018, 12)
 
 
-# we have to normalise all the columns except the quality one, so that all of them have ~equal weightage
+# normalise the columns of dataset
 df_cols = df.columns
 for i in range(len(df_cols) - 1):
     col = df_cols[i]
-    df[col] /= df[col].abs().max()      #normalise all columns so that all values lie between 0-1
+    df[col] /= df[col].abs().max()
 
+
+# split dataframe into testing and training (stratify the dataset, based on "quality" column)
 df_train, df_test = train_test_split(df, test_size=0.2, shuffle=True, stratify=df["quality"])
 
-# split the dataset furthur in training and testing
+
+# split the dataset furthur into inputs and outputs
 x_train = df_train.iloc[:, :-1]
 y_train = df_train.iloc[:, -1]
 
 x_test = df_test.iloc[:, :-1]
 y_test = df_test.iloc[:, -1]
 
+
 # since y_train and y_test do not have zero indexed labels, so make them zero indexed
-min_quality_label = y_train.min()       # same will be in y_test.min()
+min_quality_label = y_train.min()
 y_train_adjusted = y_train - min_quality_label
 y_test_adjusted = y_test - min_quality_label
 
-# now the testing and training data is created
-# ====================================================================================================
 
 # define the model
 class LinearRegression(nn.Module):
@@ -49,13 +50,15 @@ class LinearRegression(nn.Module):
     def forward(self, x):
         return self.lin1(x)
 
+
 # setup for the training loop
 model = LinearRegression(x_train.shape[1]).to(device)
 LR = 0.22
 optimiser = torch.optim.SGD(model.parameters(), lr=LR)
 iters = 8
 criterion = nn.MSELoss()
- 
+
+
 # the training loop
 for epoch in range(iters):
     for i in range(x_train.shape[0]):
@@ -82,7 +85,7 @@ with torch.no_grad():
     for i in range(x_test.shape[0]):
         input = torch.from_numpy(x_test.iloc[i, :].to_numpy().copy()).float().to(device)
         y_preds = model(input)
-        y = torch.argmax(y_preds).item()        ##max(y_preds)
+        y = torch.argmax(y_preds).item()
 
         if y == y_test_adjusted.iloc[i]:
             correct+=1
