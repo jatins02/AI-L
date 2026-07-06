@@ -1,4 +1,7 @@
 LINEAR REGRESSION MODEL, TO PREDICT THE QUALITY OF WINE.
+linear regression is a form of supervised machine learning, meaning it will use a labelled dataset.
+we use it to make predictions on continuous data, that is numeric data that can have infinite values (eg. height, weight, foot-size).
+this is not like categorical data, which has finite distinct values (eg. species of animal, color etc.)
 
 using the Wine Quality Dataset from Kaggle.
 This classification problem is not easy, because the dataset has fewer samples and is highly imbalanced (much more normal wines than excellent or poor ones).
