@@ -6,12 +6,8 @@ import torchvision
 from torchvision import datasets        # used to make datasets automatically from directory
 import torchvision.transforms as T
 
-import random
 import opendatasets as od
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 
 # od.download("https://www.kaggle.com/datasets/puneet6060/intel-image-classification")
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -21,42 +17,40 @@ transforms = T.Compose([
                     T.Normalize(mean=(0.4915, 0.4823, 0.4468), std=(0.2470, 0.2435, 0.2616)),
             ])
 
-dataset = datasets.ImageFolder(root="intel-image-classification/seg_test/seg_test/", transform=transforms)
+dataset_train = datasets.ImageFolder(root="intel-image-classification/seg_train/seg_train/", transform=transforms)
+dataset_test = datasets.ImageFolder(root="intel-image-classification/seg_test/seg_test/", transform=transforms)
 
-it = iter(dataset)
-inputs, labels = next(it)       # input is an image in three channels and labels is an int label
-
-X = []
-y = []
-for i in range(len(dataset)):
-    if (dataset[i][0].shape != torch.Size([3, 150, 150])):
+Xtrain = []
+ytrain = []
+Xtest = []
+ytest = []
+for i in range(len(dataset_train)):
+    if (dataset_train[i][0].shape != torch.Size([3, 150, 150])):
         continue
-    X.append(dataset[i][0])
-    y.append(dataset[i][1])
+    Xtrain.append(dataset_train[i][0])
+    ytrain.append(dataset_train[i][1])
 
-combined = list(zip(X, y))
-random.shuffle(combined)
+for i in range(len(dataset_test)):
+    if (dataset_test[i][0].shape != torch.Size([3, 150, 150])):
+        continue
+    Xtest.append(dataset_test[i][0])
+    ytest.append(dataset_test[i][1])
 
-X, y = zip(*combined)
-X = list(X)
-y = list(y)
+X_train = np.array(Xtrain)
+X_test = np.array(Xtest)
+y_train = np.array(ytrain)
+y_test = np.array(ytest)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15)
-
-X_train = np.array(X_train)
-X_test = np.array(X_test)
-y_train = np.array(y_train)
-y_test = np.array(y_test)
-
-# print(len(X_train))         # length of dataset, 1885
+# print(len(X_train))         # length of dataset, 13986
 # print(X_train[0].shape)     # three channels, 150 * 150
 
-# labels 0 -> 4 correspond to the below classes
+# labels 0 -> 5 correspond to the below classes
 classes = {"buildings" : 0,
            "forest" : 1,
            "glacier" : 2,
            "mountain" : 3,
-           "sea" : 4}
+           "sea" : 4,
+           "street": 5}
 
 
 # define the model
@@ -79,7 +73,7 @@ class CNN_classifier(nn.Module):
 
         # total flattened features (16 channels * 25 * 25)
         self.lin1 = nn.Linear(16*25*25, 69)
-        self.lin2 = nn.Linear(69, 5)
+        self.lin2 = nn.Linear(69, 6)
 
     def forward(self, x):
         x = self.pool1(F.relu(self.conv1(x)))   # size: (batch, 8, 75, 75)
@@ -93,8 +87,8 @@ class CNN_classifier(nn.Module):
     
 class Dataset_(Dataset):
     def __init__(self, X, y):
-        self.X = torch.tensor(X, dtype=torch.float32).to(device)
-        self.y = torch.tensor(y, dtype=torch.int64).to(device)
+        self.X = torch.tensor(X, dtype=torch.float32)
+        self.y = torch.tensor(y, dtype=torch.int64)
     
     def __len__(self):
         return len(self.X)
@@ -102,25 +96,25 @@ class Dataset_(Dataset):
     def __getitem__(self, ind):
         return self.X[ind], self.y[ind]
 
-print(type(X_train))
-
 train_dataset = Dataset_(X_train, y_train)
 test_dataset = Dataset_(X_test, y_test)
         
 model = CNN_classifier().to(device)
 LR = 0.0069
-n_epochs = 44
-batchsize = 5
-criterion = nn.CrossEntropyLoss()
+n_epochs = 4
+batchsize = 69
+criterion = nn.CrossEntropyLoss().to(device)
 optimiser = torch.optim.Adam(params = model.parameters(), lr=LR)
 
-train_dataloader = DataLoader(train_dataset, batch_size=batchsize, shuffle=False)
-test_dataloader = DataLoader(test_dataset, batch_size=batchsize, shuffle=False)
+train_dataloader = DataLoader(train_dataset, batch_size=batchsize, shuffle=True)
+test_dataloader = DataLoader(test_dataset, batch_size=batchsize, shuffle=True)
 
 # training loop
 for epoch in range(n_epochs):
     
-    for (inputs, labels) in train_dataloader:   
+    for (inputs, labels) in train_dataloader:
+        inputs = inputs.to(device)
+        labels = labels.to(device)   
         predictions = model(inputs)
 
         loss = criterion(predictions, labels)
@@ -135,7 +129,9 @@ for epoch in range(n_epochs):
 with torch.no_grad():
     total_accuracy = 0
     for inputs, labels in test_dataloader:
-        predictions = model(inputs)     # 5*5 matrix, with probabilities of each label
+        inputs = inputs.to(device)
+        labels = labels.to(device) 
+        predictions = model(inputs)
         predictions = torch.argmax(predictions, dim=1)
 
         accuracy = (predictions == labels).sum().item()
