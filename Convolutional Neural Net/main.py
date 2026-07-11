@@ -13,6 +13,7 @@ import numpy as np
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 transforms = T.Compose([
+                    T.Resize((150, 150)),       # already resize the images to size
                     T.ToTensor(),
                     T.Normalize(mean=(0.4915, 0.4823, 0.4468), std=(0.2470, 0.2435, 0.2616)),
             ])
@@ -20,26 +21,28 @@ transforms = T.Compose([
 dataset_train = datasets.ImageFolder(root="intel-image-classification/seg_train/seg_train/", transform=transforms)
 dataset_test = datasets.ImageFolder(root="intel-image-classification/seg_test/seg_test/", transform=transforms)
 
-Xtrain = []
-ytrain = []
-Xtest = []
-ytest = []
-for i in range(len(dataset_train)):
-    if (dataset_train[i][0].shape != torch.Size([3, 150, 150])):
-        continue
-    Xtrain.append(dataset_train[i][0])
-    ytrain.append(dataset_train[i][1])
+# below code occupying RAM, between the inter-conversions of arrays and datasets, since already a dataset, so directly make the dataloader
+ 
+# Xtrain = []
+# ytrain = []
+# Xtest = []
+# ytest = []
+# for i in range(len(dataset_train)):
+#     if (dataset_train[i][0].shape != torch.Size([3, 150, 150])):
+#         continue
+#     Xtrain.append(dataset_train[i][0])
+#     ytrain.append(dataset_train[i][1])
 
-for i in range(len(dataset_test)):
-    if (dataset_test[i][0].shape != torch.Size([3, 150, 150])):
-        continue
-    Xtest.append(dataset_test[i][0])
-    ytest.append(dataset_test[i][1])
+# for i in range(len(dataset_test)):
+#     if (dataset_test[i][0].shape != torch.Size([3, 150, 150])):
+#         continue
+#     Xtest.append(dataset_test[i][0])
+#     ytest.append(dataset_test[i][1])
 
-X_train = np.array(Xtrain)
-X_test = np.array(Xtest)
-y_train = np.array(ytrain)
-y_test = np.array(ytest)
+# X_train = np.array(Xtrain)
+# X_test = np.array(Xtest)
+# y_train = np.array(ytrain)
+# y_test = np.array(ytest)
 
 # print(len(X_train))         # length of dataset, 13986
 # print(X_train[0].shape)     # three channels, 150 * 150
@@ -84,30 +87,31 @@ class CNN_classifier(nn.Module):
         x = self.lin2(x)                        # raw rawlogits returned
 
         return x
-    
-class Dataset_(Dataset):
-    def __init__(self, X, y):
-        self.X = torch.tensor(X, dtype=torch.float32)
-        self.y = torch.tensor(y, dtype=torch.int64)
-    
-    def __len__(self):
-        return len(self.X)
-    
-    def __getitem__(self, ind):
-        return self.X[ind], self.y[ind]
 
-train_dataset = Dataset_(X_train, y_train)
-test_dataset = Dataset_(X_test, y_test)
+# not required
+# class Dataset_(Dataset):
+#     def __init__(self, X, y):
+#         self.X = torch.tensor(X, dtype=torch.float32)
+#         self.y = torch.tensor(y, dtype=torch.int64)
+    
+#     def __len__(self):
+#         return len(self.X)
+    
+#     def __getitem__(self, ind):
+#         return self.X[ind], self.y[ind]
+
+# train_dataset = Dataset_(X_train, y_train)
+# test_dataset = Dataset_(X_test, y_test)
         
 model = CNN_classifier().to(device)
-LR = 0.0069
-n_epochs = 4
+LR = 0.00069
+n_epochs = 8
 batchsize = 69
 criterion = nn.CrossEntropyLoss().to(device)
 optimiser = torch.optim.Adam(params = model.parameters(), lr=LR)
 
-train_dataloader = DataLoader(train_dataset, batch_size=batchsize, shuffle=True)
-test_dataloader = DataLoader(test_dataset, batch_size=batchsize, shuffle=True)
+train_dataloader = DataLoader(dataset_train, batch_size=batchsize, shuffle=True)
+test_dataloader = DataLoader(dataset_test, batch_size=batchsize, shuffle=True)
 
 # training loop
 for epoch in range(n_epochs):
@@ -126,8 +130,9 @@ for epoch in range(n_epochs):
 
 
 # testing loop
+total_accuracy = 0
+total_samples = 0
 with torch.no_grad():
-    total_accuracy = 0
     for inputs, labels in test_dataloader:
         inputs = inputs.to(device)
         labels = labels.to(device) 
@@ -137,5 +142,6 @@ with torch.no_grad():
         accuracy = (predictions == labels).sum().item()
         
         total_accuracy += accuracy
+        total_samples += labels.size(0)
 
-print(f"accuracy: {(total_accuracy/len(X_test)) * 100}")
+print(f"accuracy: {(total_accuracy/total_samples) * 100}")      # since X_train not anymore, so keep a counter of the number of samples to the model while testing
