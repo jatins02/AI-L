@@ -1,0 +1,42 @@
+tensorboard is a visualisation toolkit, developed by the tensorflow team
+
+go to tensorflow.org/tensorboard/ to read the documentation, this documentation is for tensorflow
+go to pytorch.org/docs/stable/tensorboard.html to read the pytorch documentation for the tensorboard module
+
+you can:
+- track and visualise metrics like model accuracy and loss
+- visualise model graph
+- view histograms of weights, biases or often tensor as they change over time
+- project embeddings to a lower dimension
+- displaying images, test and audio data
+etc.
+
+
+pip install tensorboard
+# this will download tensorboad without downloading the tensorflow, so here tensorboard
+will run will less of a feature set
+
+# start tensorboard by the following:
+tensorboard --logdir=runs
+# the log files are stored in the runs directory
+
+# import tensorboard
+from torch.utils.tensorboard import SummaryWriter
+
+# create a writer object
+writer = SummaryWriter("runs/mnist")
+
+# to display the images you have in a batch 
+example_data = one batch of images
+
+img_grid = torchvision.utils.make_grid(example_data)
+writer.add_image("label", img_grid)
+
+writer.close()      # will make sure that all the outputs are flushed
+sys.exit()          # can be used to make an early exit without running the whole program
+
+# to make a graph for the model
+
+writer.add_graph(model, example_data.reshape(-1, 28*28))        # why the second argument like that?
+
+
